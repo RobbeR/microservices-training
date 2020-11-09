@@ -1,0 +1,46 @@
+version: '3.4'
+services:
+    basket:
+        build: 
+            context: .
+            dockerfile: basket/Dockerfile
+            target: dev
+        volumes: 
+            - './basket/src:/app'
+        depends_on:
+            - basket-cache
+            - event-bus
+        environment: 
+            CACHE_HOST: basket-cache
+            CACHE_PORT: 6379
+            EVENT_BUS_URL: amqp://event-bus
+    basket-cache:
+        image: redis:alpine
+    catalog:
+        build: 
+            context: .
+            dockerfile: catalog/Dockerfile
+            target: dev
+        volumes: 
+            - './catalog/src:/app'
+        environment: 
+            DB_URL: mongodb://catalog-db:27017/catalog
+            EVENT_BUS_URL: amqp://event-bus
+        depends_on:
+            - catalog-db
+            - event-bus
+    catalog-db:
+        image: mongo
+        volumes:
+            - '/data/db'
+    event-bus:
+        image: rabbitmq
+    gateway:
+        build: 
+            context: .
+            dockerfile: gateway/Dockerfile
+            target: dev
+        ports:
+            - '8080:80'
+        volumes: 
+            - './gateway/src:/app'
